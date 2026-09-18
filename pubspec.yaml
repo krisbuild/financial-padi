@@ -1,0 +1,46 @@
+name: financial_padi
+description: "Financial Padi - budgeting and financial management app."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # Firebase
+  firebase_core: ^3.8.0
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.5.0
+
+  # State management
+  flutter_riverpod: ^2.6.1
+
+  # Routing
+  go_router: ^14.6.2
+
+  # Charts
+  fl_chart: ^0.69.2
+
+  # Local notifications for bill reminders
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.5.1
+  shared_preferences: ^2.3.3
+  equatable: ^2.0.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

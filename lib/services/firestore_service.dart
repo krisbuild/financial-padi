@@ -66,8 +66,20 @@ class FirestoreService {
     return _categories.doc(category.id).set(category.toMap());
   }
 
+  Future<void> updateCategory(CategoryModel category) {
+    return _categories.doc(category.id).update(category.toMap());
+  }
+
   Future<void> deleteCategory(String id) {
     return _categories.doc(id).delete();
+  }
+
+  Future<void> addCategories(List<CategoryModel> categories) {
+    final batch = _firestore.batch();
+    for (final category in categories) {
+      batch.set(_categories.doc(category.id), category.toMap());
+    }
+    return batch.commit();
   }
 
   // ---------------- Budgets ----------------

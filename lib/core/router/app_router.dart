@@ -7,7 +7,11 @@ import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/signup_screen.dart';
 import '../../features/bills/screens/bills_screen.dart';
 import '../../features/budgets/screens/budgets_goals_screen.dart';
+import '../../features/categories/screens/manage_categories_screen.dart';
+import '../../features/coach/screens/coach_chat_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
+import '../../features/more/screens/more_hub_screen.dart';
+import '../../features/onboarding/screens/onboarding_flow_screen.dart';
 import '../../features/onboarding/screens/splash_screen.dart';
 import '../../features/reports/screens/reports_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
@@ -17,6 +21,7 @@ import '../../widgets/app_shell.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final authState = ref.watch(authStateProvider);
+  final appUserAsync = ref.watch(appUserProvider);
 
   return GoRouter(
     initialLocation: '/',
@@ -26,10 +31,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isSignedIn = authState.value != null;
       final goingToAuth = _authRoutes.contains(state.matchedLocation);
       final atSplash = state.matchedLocation == '/splash';
+      final atOnboarding = state.matchedLocation == '/onboarding';
 
       if (isLoading) return atSplash ? null : '/splash';
       if (!isSignedIn && !goingToAuth) return '/login';
-      if (isSignedIn && (goingToAuth || atSplash)) return '/';
+      if (isSignedIn && goingToAuth) return '/';
+
+      if (isSignedIn) {
+        final appUser = appUserAsync.value;
+        final stillLoadingProfile = appUserAsync.isLoading && !appUserAsync.hasValue;
+        if (stillLoadingProfile) return atSplash ? null : '/splash';
+        final needsOnboarding = appUser != null && !appUser.onboardingComplete;
+        if (needsOnboarding && !atOnboarding) return '/onboarding';
+        if (!needsOnboarding && (atOnboarding || atSplash)) return '/';
+      }
       return null;
     },
     routes: [
@@ -50,8 +65,24 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ForgotPasswordScreen(),
       ),
       GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingFlowScreen(),
+      ),
+      GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/reports',
+        builder: (context, state) => const ReportsScreen(),
+      ),
+      GoRoute(
+        path: '/bills',
+        builder: (context, state) => const BillsScreen(),
+      ),
+      GoRoute(
+        path: '/categories',
+        builder: (context, state) => const ManageCategoriesScreen(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) =>
@@ -59,6 +90,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         branches: [
           StatefulShellBranch(routes: [
             GoRoute(path: '/', builder: (context, state) => const DashboardScreen()),
+          ]),
+          StatefulShellBranch(routes: [
+            GoRoute(path: '/coach', builder: (context, state) => const CoachChatScreen()),
           ]),
           StatefulShellBranch(routes: [
             GoRoute(
@@ -73,13 +107,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ),
           ]),
           StatefulShellBranch(routes: [
-            GoRoute(path: '/bills', builder: (context, state) => const BillsScreen()),
-          ]),
-          StatefulShellBranch(routes: [
-            GoRoute(
-              path: '/reports',
-              builder: (context, state) => const ReportsScreen(),
-            ),
+            GoRoute(path: '/more', builder: (context, state) => const MoreHubScreen()),
           ]),
         ],
       ),

@@ -31,3 +31,11 @@ final budgetProgressListProvider = Provider<List<BudgetProgress>>((ref) {
       .map((b) => BudgetProgress(budget: b, spent: spending[b.categoryId] ?? 0))
       .toList();
 });
+
+/// Budgets for the real current calendar month, independent of whatever
+/// month the user is browsing elsewhere (e.g. in Reports) — used by the
+/// AI coach, which always reasons about "this month" as actually now.
+final currentMonthBudgetsProvider = StreamProvider<List<BudgetModel>>((ref) {
+  final month = BudgetModel.monthKey(DateTime.now());
+  return ref.watch(firestoreServiceProvider).watchBudgetsForMonth(month);
+});

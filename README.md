@@ -1,52 +1,105 @@
 # Financial Padi
 
-A budgeting and personal finance management app built with Flutter. Track
-income and expenses, set category budgets, save toward goals, get reminders
-for recurring bills, and see your spending trends at a glance.
+An AI-powered personal finance app: track money, understand spending, save
+toward goals, and get coached by an AI financial assistant that reasons over
+your own real data. Nothing is hardcoded to one income level, currency, or
+set of spending categories — every user sets these during onboarding and can
+change them anytime.
 
 ## Features
 
 - **Auth** — email/password sign up, sign in, and password reset (Firebase Auth).
+- **Onboarding** — a short, adaptive setup flow: name, currency (any of 20
+  supported), and a pick-your-own starting set of categories (or add your
+  own). This is what makes the app generalize across users instead of
+  assuming a fixed income, location, or spending profile.
+- **AI Coach** — a chat screen plus a home-screen "insight of the day" card.
+  It reasons over a live snapshot of the signed-in user's own transactions,
+  budgets, goals, and bills (see **AI Coach architecture** below).
 - **Transactions** — log income and expenses against categories, with notes and dates.
-- **Categories** — a seeded set of income/expense categories per user.
+- **Categories** — fully user-owned: add, rename, recolor, re-icon, or delete
+  any category at any time (Categories screen, under More).
 - **Budgets** — set a monthly spending limit per category and track progress.
 - **Goals** — savings goals with a target amount, optional target date, and progress bar.
 - **Recurring bills** — weekly/monthly/yearly bills with due-date local push reminders; "mark as paid" logs a transaction and rolls the bill to its next due date.
 - **Reports** — spending-by-category pie chart and a 6-month income vs. expense bar chart.
 - **Settings** — currency selection, light/dark/system theme, sign out, delete account.
 
+## AI Coach architecture
+
+The coach is built behind a small interface so a real model can be dropped
+in later without touching any UI or provider code:
+
+```
+lib/services/ai_coach_service.dart          -> abstract AiCoachService
+lib/services/mock_ai_coach_service.dart     -> today's implementation
+lib/models/financial_snapshot.dart          -> the data shape the coach reasons over
+lib/providers/ai_coach_provider.dart        -> builds the snapshot from live data,
+                                                exposes chat state
+```
+
+`MockAiCoachService` is **rule-based, not a real LLM** — it inspects the
+user's `FinancialSnapshot` (built fresh from their transactions, budgets,
+goals, and bills every time) and returns templated, but genuinely
+data-driven, observations and answers. This was a deliberate choice for now:
+wiring a real model requires an API key, and that key must never live in a
+mobile client. To connect a real model later:
+
+1. Stand up a minimal backend (a Cloud Function, or any small server) that
+   holds the API key and proxies chat requests.
+2. Implement `AiCoachService` with a class that POSTs the question + a
+   serialized `FinancialSnapshot` to that backend and returns the reply.
+3. Swap the implementation in `aiCoachServiceProvider`
+   (`lib/providers/ai_coach_provider.dart`) — nothing else changes.
+
+Chat history is currently in-memory only (resets on app restart); persisting
+it to Firestore under `users/{uid}/chatMessages` would be a small addition
+using the same pattern as the other collections in `FirestoreService`.
+
 ## Tech stack
 
 - **Flutter** (Dart), Material 3
 - **State management:** Riverpod
-- **Routing:** go_router (with an auth-aware redirect guard and a bottom-nav shell)
+- **Routing:** go_router (auth + onboarding-aware redirect guard, bottom-nav shell)
 - **Backend:** Firebase Auth + Cloud Firestore
 - **Charts:** fl_chart
 - **Local notifications:** flutter_local_notifications + timezone
+
+## Navigation
+
+Bottom tabs: **Home**, **Coach**, **Activity** (transactions), **Budgets**,
+**More** (Reports, Recurring Bills, Categories, Settings).
 
 ## Project structure
 
 ```
 lib/
-  core/            theme, router, formatting utils, icon registry
+  core/            theme, router, formatting utils, icon registry, category templates
   models/          plain Dart models with Firestore (de)serialization
-  services/        AuthService, FirestoreService, NotificationService
-  providers/       Riverpod providers (auth, transactions, budgets, goals, bills, settings)
+  services/        AuthService, FirestoreService, NotificationService, AiCoachService (+ mock)
+  providers/       Riverpod providers (auth, transactions, budgets, goals, bills, settings, ai coach)
   widgets/          shared building blocks (buttons, text fields, empty states, nav shell)
   features/
-    auth/          login, signup, forgot password
-    dashboard/      home screen: balance, budgets/bills preview, recent transactions
+    onboarding/     splash + the setup flow (name, currency, categories)
+    auth/           login, signup, forgot password
+    dashboard/      home screen: balance, AI insight card, budgets/bills preview, recent transactions
+    coach/          AI coach chat screen
     transactions/   list + add/edit
     budgets/        budgets & goals (tabs)
     goals/
     bills/          recurring bills + reminders
+    categories/     add/edit/delete categories
     reports/        charts
+    more/           hub screen linking to reports/bills/categories/settings
     settings/
 ```
 
 Firestore data lives under `users/{uid}/...` (transactions, categories, budgets,
 goals, bills), so a single security rule can enforce per-user isolation — see
-**Firestore security rules** below.
+**Firestore security rules** below. Categories are no longer seeded with a
+fixed list on signup — they're created by the user during onboarding (from
+suggestions) or later from the Categories screen, so the collection only
+ever contains what a given user actually chose.
 
 ## Setup
 
@@ -134,13 +187,12 @@ flutter run
 
 ## Notes / next steps
 
-- `flutter analyze` and `flutter test` are clean as of this commit.
-- This app was scaffolded and coded in a sandboxed environment without a
-  configured Android SDK/emulator or a real Firebase project, so it hasn't
-  been run end-to-end on a device yet — do that first after following the
-  setup steps above.
-- Consider adding: recurring-bill push notifications while the app is
-  terminated need `flutter_local_notifications`' exact-alarm permission to
-  be granted at runtime on Android 12+ (the manifest already declares it);
-  a category management screen (rename/add/delete custom categories) beyond
-  the seeded defaults; CSV/PDF export; biometric app-lock.
+- `flutter analyze` and `flutter test` are clean as of this commit. This was
+  built and verified with static analysis and unit/widget tests only — no
+  APK/app bundle has been built or run on a device/emulator in this
+  environment.
+- The AI Coach is intentionally mocked (see **AI Coach architecture**) —
+  connecting a real model needs a backend to hold the API key.
+- Consider adding next: persisting chat history to Firestore; a "streak" or
+  daily-check-in mechanic for extra engagement; CSV/PDF export; biometric
+  app-lock; push (not just local) notifications for bill reminders.

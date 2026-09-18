@@ -35,21 +35,41 @@ class AuthService {
       createdAt: DateTime.now(),
     );
 
+    await _firestore.collection('users').doc(user.uid).set(appUser.toMap());
+
+    return appUser;
+  }
+
+  /// Finishes onboarding: stores the currency the user picked and the
+  /// categories they chose to start with (or created themselves), then
+  /// marks the account ready. Nothing here assumes a particular currency,
+  /// income level, or category set — every value comes from the user.
+  Future<void> completeOnboarding({
+    required String uid,
+    required String displayName,
+    required String currencyCode,
+    required List<CategoryModel> categories,
+  }) async {
     final batch = _firestore.batch();
-    batch.set(_firestore.collection('users').doc(user.uid), appUser.toMap());
-    for (final category in CategoryModel.defaultCategories()) {
+    final userDoc = _firestore.collection('users').doc(uid);
+    batch.update(userDoc, {
+      'displayName': displayName,
+      'currencyCode': currencyCode,
+      'onboardingComplete': true,
+    });
+    for (final category in categories) {
       batch.set(
-        _firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('categories')
-            .doc(category.id),
+        userDoc.collection('categories').doc(category.id),
         category.toMap(),
       );
     }
     await batch.commit();
+  }
 
-    return appUser;
+  Future<void> updateCurrency({required String uid, required String currencyCode}) {
+    return _firestore.collection('users').doc(uid).update({
+      'currencyCode': currencyCode,
+    });
   }
 
   Future<AppUser> signIn({required String email, required String password}) async {

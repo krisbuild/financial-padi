@@ -12,6 +12,7 @@ class CustomTextField extends StatelessWidget {
     this.suffixIcon,
     this.autofillHints,
     this.maxLines = 1,
+    this.onChanged,
   });
 
   final String label;
@@ -23,6 +24,7 @@ class CustomTextField extends StatelessWidget {
   final Widget? suffixIcon;
   final Iterable<String>? autofillHints;
   final int maxLines;
+  final ValueChanged<String>? onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,7 @@ class CustomTextField extends StatelessWidget {
       validator: validator,
       autofillHints: autofillHints,
       maxLines: maxLines,
+      onChanged: onChanged,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,

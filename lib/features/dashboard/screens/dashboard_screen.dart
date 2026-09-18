@@ -12,6 +12,7 @@ import '../../../widgets/section_header.dart';
 import '../../bills/widgets/bill_tile.dart';
 import '../../transactions/screens/add_edit_transaction_screen.dart';
 import '../../transactions/widgets/transaction_tile.dart';
+import '../widgets/ai_insight_card.dart';
 import '../widgets/balance_card.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -51,6 +52,8 @@ class DashboardScreen extends ConsumerWidget {
               expense: expense,
               currencyCode: currencyCode,
             ),
+            const SizedBox(height: 16),
+            const AiInsightCard(),
             const SizedBox(height: 24),
             if (budgetProgress.isNotEmpty) ...[
               SectionHeader(
@@ -71,7 +74,7 @@ class DashboardScreen extends ConsumerWidget {
               SectionHeader(
                 title: 'Upcoming bills',
                 actionLabel: 'See all',
-                onAction: () => context.go('/bills'),
+                onAction: () => context.push('/bills'),
               ),
               const SizedBox(height: 4),
               Card(

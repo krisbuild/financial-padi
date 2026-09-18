@@ -90,7 +90,7 @@ class SettingsScreen extends ConsumerWidget {
                   .map((code) => DropdownMenuItem(value: code, child: Text(code)))
                   .toList(),
               onChanged: (value) {
-                if (value != null) ref.read(currencyCodeProvider.notifier).setCurrency(value);
+                if (value != null) setUserCurrency(ref, value);
               },
             ),
           ),
